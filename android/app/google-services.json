@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "972102098595",
+    "project_id": "gamesync-a6084",
+    "storage_bucket": "gamesync-a6084.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:972102098595:android:6c2cca97980ecc298f2916",
+        "android_client_info": {
+          "package_name": "com.charumadhi.gamesync"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDxhFQwulAYD7vu_7wW1EmrdNV_Zy4sHIo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,64 @@
+name: GameSync
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.3
+
+dependencies:
+  flutter:
+    sdk: flutter
+  intl: ^0.17.0
+  firebase_core: ^3.6.0
+  cloud_firestore: ^5.4.4
+  firebase_auth: ^5.3.1
+
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_launcher_icons: ^0.13.1
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/logo.png"
+  width: 50
+  height: 50
+
+flutter:
+  uses-material-design: true
+
+  # Add the path to your assets here
+  assets:
+    - assets/appLogo.png  # App logo for the launcher
+    - assets/background_image.jpg  # Background image for the MainEntrancePage
+    - assets/app_logo.jpg
+    - assets/back.jpg
+    - assets/logo.png
+    - assets/tictactoe.jpeg
+    - assets/tictactoe.jpeg
+    - assets/findTheJoker.jpg
+    - assets/matchTheCards.jpg
+
+  # Fonts section can be added here if you have custom fonts
+  # To add custom fonts to your application, add a fonts section here,
+  # in this "flutter" section. Each entry in this list should have a
+  # "family" key with the font family name, and a "fonts" key with a
+  # list giving the asset and other descriptors for the font. For
+  # example:
+  # fonts:
+  #   - family: Schyler
+  #     fonts:
+  #       - asset: fonts/Schyler-Regular.ttf
+  #       - asset: fonts/Schyler-Italic.ttf
+  #         style: italic
+  #   - family: Trajan Pro
+  #     fonts:
+  #       - asset: fonts/TrajanPro.ttf
+  #       - asset: fonts/TrajanPro_Bold.ttf
+  #         weight: 700
