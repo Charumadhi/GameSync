@@ -1,14 +1,19 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'dart:math';
-import 'package:flutter/services.dart'; // For clipboard
+import 'package:flutter/services.dart';
+import 'tictactoepage.dart';
 
 class GameOptionsPage extends StatefulWidget {
   final String playerId;
   final String playerName;
   final String selectedGame; // The selected game passed from the previous page
 
-  GameOptionsPage({required this.playerId, required this.playerName, required this.selectedGame});
+  GameOptionsPage({
+    required this.playerId,
+    required this.playerName,
+    required this.selectedGame,
+  });
 
   @override
   _GameOptionsPageState createState() => _GameOptionsPageState();
@@ -19,6 +24,7 @@ class _GameOptionsPageState extends State<GameOptionsPage> {
   bool isJoiningGame = false;
   String passkey = '';
   TextEditingController passkeyController = TextEditingController();
+  String opponentName = ''; // Placeholder for opponent's name
 
   // Function to generate random 6-character passkey
   String generatePasskey() {
@@ -37,19 +43,59 @@ class _GameOptionsPageState extends State<GameOptionsPage> {
 
   // Function to create a room in Firestore
   Future<void> createRoomInFirestore(String gameId, String passkey) async {
-    await FirebaseFirestore.instance.collection('rooms').add({
-      'gameId': gameId, // Reference to the game
-      'passkey': passkey, // Unique passkey
-      'hostPlayerId': widget.playerId, // Host's ID
-      'hostPlayerName': widget.playerName, // Host's name
+    await FirebaseFirestore.instance.collection('rooms').doc(passkey).set({
+      'gameId': gameId,
+      'passkey': passkey,
+      'hostPlayerId': widget.playerId,
+      'hostPlayerName': widget.playerName,
       'players': [
-        {'playerId': widget.playerId, 'playerName': widget.playerName}, // Add host as the first player
+        {'playerId': widget.playerId, 'playerName': widget.playerName},
       ],
-      'status': 'waiting', // Game is waiting for players
-      'createdAt': FieldValue.serverTimestamp(), // Timestamp of room creation
-      'startedAt': null, // Game hasn't started yet
+      'status': 'waiting',
+      'createdAt': FieldValue.serverTimestamp(),
+      'startedAt': null,
     });
   }
+
+  // Function to join an existing room in Firestore
+  Future<void> joinRoomInFirestore(String enteredPasskey) async {
+    DocumentReference roomRef = FirebaseFirestore.instance.collection('rooms').doc(enteredPasskey);
+    DocumentSnapshot roomSnapshot = await roomRef.get();
+
+    if (roomSnapshot.exists) {
+      // Get opponent's name
+      var players = roomSnapshot['players'];
+      setState(() {
+        opponentName = players[0]['playerName']; // Assuming the first player is the host (opponent)
+      });
+
+      // Update players array to include the current player
+      await roomRef.update({
+        'players': FieldValue.arrayUnion([
+          {'playerId': widget.playerId, 'playerName': widget.playerName}
+        ]),
+      });
+
+      // Navigate to TicTacToePage with opponentName
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => TicTacToePage(
+            roomId: enteredPasskey,
+            playerId: widget.playerId,
+            playerName: widget.playerName,
+            //opponentName: opponentName, // Pass the opponent's name
+          ),
+        ),
+      );
+    } else {
+      // Handle invalid passkey
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Invalid passkey. Room not found.')),
+      );
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -59,11 +105,10 @@ class _GameOptionsPageState extends State<GameOptionsPage> {
         backgroundColor: Colors.white70, // Updated AppBar color
       ),
       body: Container(
-        // Add background image here
         decoration: BoxDecoration(
           image: DecorationImage(
             image: AssetImage('assets/back.jpg'), // Placeholder image path
-            fit: BoxFit.cover, // Ensures the image covers the entire screen
+            fit: BoxFit.cover,
           ),
         ),
         padding: const EdgeInsets.all(16.0),
@@ -76,7 +121,6 @@ class _GameOptionsPageState extends State<GameOptionsPage> {
               crossAxisSpacing: 30,
               mainAxisSpacing: 20,
               children: [
-                // Create Game button
                 ElevatedButton(
                   onPressed: () {
                     setState(() {
@@ -86,12 +130,12 @@ class _GameOptionsPageState extends State<GameOptionsPage> {
                     });
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.indigo, // Button color
+                    backgroundColor: Colors.indigo,
                     padding: const EdgeInsets.all(16.0),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30), // Square with rounded corners
+                      borderRadius: BorderRadius.circular(30),
                     ),
-                    elevation: 5, // Shadow
+                    elevation: 5,
                   ),
                   child: Text('Create Game', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
                 ),
@@ -104,10 +148,10 @@ class _GameOptionsPageState extends State<GameOptionsPage> {
                     });
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.indigo, // Button color
+                    backgroundColor: Colors.indigo,
                     padding: const EdgeInsets.all(16.0),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30), // Square with rounded corners
+                      borderRadius: BorderRadius.circular(30),
                     ),
                     elevation: 5,
                   ),
@@ -117,12 +161,11 @@ class _GameOptionsPageState extends State<GameOptionsPage> {
             ),
             const SizedBox(height: 20),
             if (isCreatingGame) ...[
-              // Card with shadow for passkey
               Card(
                 color: Colors.white.withOpacity(0.9),
                 elevation: 8,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12), // Rounded corners
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
@@ -132,7 +175,7 @@ class _GameOptionsPageState extends State<GameOptionsPage> {
                       labelText: 'Share the passkey',
                       suffixIcon: IconButton(
                         icon: const Icon(Icons.copy),
-                        onPressed: () => copyToClipboard(passkey), // Copy button
+                        onPressed: () => copyToClipboard(passkey),
                       ),
                       labelStyle: TextStyle(color: Colors.black87),
                     ),
@@ -144,33 +187,33 @@ class _GameOptionsPageState extends State<GameOptionsPage> {
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () async {
-                  // Create the room in Firestore and navigate to game screen
+                  // Create the room in Firestore and navigate to TicTacToePage
                   await createRoomInFirestore(widget.selectedGame, passkey);
 
+                  // Navigate to TicTacToePage after creating room
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => GameScreen(
+                      builder: (context) => TicTacToePage(
+                        roomId: passkey,
                         playerId: widget.playerId,
                         playerName: widget.playerName,
-                        passkey: passkey,
-                        isCreator: true, // Indicating player is the creator
+                        //opponentName: '', // No opponent yet when creating the game
                       ),
                     ),
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green, // Button color
+                  backgroundColor: Colors.green,
                   padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 40),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12), // Rounded rectangle
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   elevation: 5,
                 ),
                 child: const Text('Start Game', style: TextStyle(fontSize: 18, color: Colors.white)),
               ),
             ] else if (isJoiningGame) ...[
-              // Joining the game
               Card(
                 color: Colors.white.withOpacity(0.9),
                 elevation: 8,
@@ -193,18 +236,8 @@ class _GameOptionsPageState extends State<GameOptionsPage> {
               ElevatedButton(
                 onPressed: () {
                   String enteredPasskey = passkeyController.text;
-                  // Navigate to the game screen as the joiner
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => GameScreen(
-                        playerId: widget.playerId,
-                        playerName: widget.playerName,
-                        passkey: enteredPasskey,
-                        isCreator: false, // Indicating player is joining the game
-                      ),
-                    ),
-                  );
+                  // Attempt to join the game
+                  joinRoomInFirestore(enteredPasskey);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blueAccent,
@@ -218,36 +251,6 @@ class _GameOptionsPageState extends State<GameOptionsPage> {
               ),
             ],
           ],
-        ),
-      ),
-    );
-  }
-}
-
-// Game screen after creating/joining
-class GameScreen extends StatelessWidget {
-  final String playerId;
-  final String playerName;
-  final String passkey;
-  final bool isCreator;
-
-  GameScreen({
-    required this.playerId,
-    required this.playerName,
-    required this.passkey,
-    required this.isCreator,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Game Screen'),
-      ),
-      body: Center(
-        child: Text(
-          '${isCreator ? "Creator" : "Joiner"}: $playerName with Passkey: $passkey',
-          style: TextStyle(fontSize: 20),
         ),
       ),
     );
