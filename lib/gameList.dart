@@ -11,7 +11,7 @@ class GamesListPage extends StatelessWidget {
   // Dummy list of games
   final List<Map<String, String>> games = [
     {'name': 'Tic-Tac-Toe', 'image': 'assets/tictactoe.jpeg'},
-    {'name': 'Roles and Royals', 'image': 'assets/tictactoe.jpeg'},
+    {'name': 'Dots and boxes', 'image': 'assets/dotsAndPages.png'},
     {'name': 'Match the Cards', 'image': 'assets/matchTheCards.jpg'},
     {'name': 'Find the Joker', 'image': 'assets/findTheJoker.jpg'},
   ];

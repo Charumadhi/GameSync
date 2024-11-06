@@ -3,11 +3,14 @@ import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:flutter/services.dart';
 import 'tictactoepage.dart';
+import 'connectsDots.dart';
+// import 'chesspage.dart';
+// import 'boostgamespage.dart';
 
 class GameOptionsPage extends StatefulWidget {
   final String playerId;
   final String playerName;
-  final String selectedGame; // The selected game passed from the previous page
+  final String selectedGame;
 
   GameOptionsPage({
     required this.playerId,
@@ -24,7 +27,14 @@ class _GameOptionsPageState extends State<GameOptionsPage> {
   bool isJoiningGame = false;
   String passkey = '';
   TextEditingController passkeyController = TextEditingController();
+  String selectedGame = ''; // Store the selected game
   String opponentName = ''; // Placeholder for opponent's name
+
+  @override
+  void initState() {
+    super.initState();
+    selectedGame = widget.selectedGame;
+  }
 
   // Function to generate random 6-character passkey
   String generatePasskey() {
@@ -42,9 +52,9 @@ class _GameOptionsPageState extends State<GameOptionsPage> {
   }
 
   // Function to create a room in Firestore
-  Future<void> createRoomInFirestore(String gameId, String passkey) async {
+  Future<void> createRoomInFirestore(String passkey) async {
     await FirebaseFirestore.instance.collection('rooms').doc(passkey).set({
-      'gameId': gameId,
+      'gameId': selectedGame,
       'passkey': passkey,
       'hostPlayerId': widget.playerId,
       'hostPlayerName': widget.playerName,
@@ -63,51 +73,60 @@ class _GameOptionsPageState extends State<GameOptionsPage> {
     DocumentSnapshot roomSnapshot = await roomRef.get();
 
     if (roomSnapshot.exists) {
-      // Get opponent's name
+      String gameType = roomSnapshot['gameId'];
       var players = roomSnapshot['players'];
       setState(() {
         opponentName = players[0]['playerName']; // Assuming the first player is the host (opponent)
       });
 
-      // Update players array to include the current player
       await roomRef.update({
         'players': FieldValue.arrayUnion([
           {'playerId': widget.playerId, 'playerName': widget.playerName}
         ]),
       });
 
-      // Navigate to TicTacToePage with opponentName
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => TicTacToePage(
-            roomId: enteredPasskey,
-            playerId: widget.playerId,
-            playerName: widget.playerName,
-            //opponentName: opponentName, // Pass the opponent's name
-          ),
-        ),
-      );
+      navigateToGame(gameType, enteredPasskey); // Navigate based on the selected game
     } else {
-      // Handle invalid passkey
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Invalid passkey. Room not found.')),
       );
     }
   }
 
+  // Function to navigate to the selected game
+  void navigateToGame(String game, String roomId) {
+    print("Navigating to Game: $game");  // This will print the selected game in the terminal
+    Widget gamePage;
+    switch (game) {
+      case 'Tic-Tac-Toe':
+        gamePage = TicTacToePage(roomId: roomId, playerId: widget.playerId, playerName: widget.playerName);
+        break;
+      case 'Dots and boxes':
+        gamePage = ConnectDotsPage(roomId: roomId, playerId: widget.playerId, playerName: widget.playerName);
+        break;
+    // case 'Chess':
+    //   gamePage = ChessPage(roomId: roomId, playerId: widget.playerId, playerName: widget.playerName);
+    //   break;
+    // case 'Boost Games':
+    //   gamePage = BoostGamesPage(roomId: roomId, playerId: widget.playerId, playerName: widget.playerName);
+    //   break;
+      default:
+        return;
+    }
+    Navigator.push(context, MaterialPageRoute(builder: (context) => gamePage));
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('Choose Your Game Option'),
-        backgroundColor: Colors.white70, // Updated AppBar color
+        backgroundColor: Colors.white70,
       ),
       body: Container(
         decoration: BoxDecoration(
           image: DecorationImage(
-            image: AssetImage('assets/back.jpg'), // Placeholder image path
+            image: AssetImage('assets/back.jpg'),
             fit: BoxFit.cover,
           ),
         ),
@@ -121,12 +140,13 @@ class _GameOptionsPageState extends State<GameOptionsPage> {
               crossAxisSpacing: 30,
               mainAxisSpacing: 20,
               children: [
+                // Start Game button
                 ElevatedButton(
                   onPressed: () {
                     setState(() {
                       isCreatingGame = true;
                       isJoiningGame = false;
-                      passkey = generatePasskey(); // Generate passkey when creating game
+                      passkey = generatePasskey();
                     });
                   },
                   style: ElevatedButton.styleFrom(
@@ -137,14 +157,14 @@ class _GameOptionsPageState extends State<GameOptionsPage> {
                     ),
                     elevation: 5,
                   ),
-                  child: Text('Create Game', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                  child: Text("Start Game", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
                 ),
+                // Join Game button
                 ElevatedButton(
                   onPressed: () {
                     setState(() {
                       isJoiningGame = true;
                       isCreatingGame = false;
-                      passkeyController.clear(); // Clear the passkey controller
                     });
                   },
                   style: ElevatedButton.styleFrom(
@@ -155,7 +175,7 @@ class _GameOptionsPageState extends State<GameOptionsPage> {
                     ),
                     elevation: 5,
                   ),
-                  child: Text('Join a Game', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                  child: Text("Join Game", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
                 ),
               ],
             ),
@@ -187,21 +207,8 @@ class _GameOptionsPageState extends State<GameOptionsPage> {
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () async {
-                  // Create the room in Firestore and navigate to TicTacToePage
-                  await createRoomInFirestore(widget.selectedGame, passkey);
-
-                  // Navigate to TicTacToePage after creating room
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => TicTacToePage(
-                        roomId: passkey,
-                        playerId: widget.playerId,
-                        playerName: widget.playerName,
-                        //opponentName: '', // No opponent yet when creating the game
-                      ),
-                    ),
-                  );
+                  await createRoomInFirestore(passkey);
+                  navigateToGame(selectedGame, passkey);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
@@ -235,9 +242,7 @@ class _GameOptionsPageState extends State<GameOptionsPage> {
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
-                  String enteredPasskey = passkeyController.text;
-                  // Attempt to join the game
-                  joinRoomInFirestore(enteredPasskey);
+                  joinRoomInFirestore(passkeyController.text);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blueAccent,

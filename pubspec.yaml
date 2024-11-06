@@ -44,6 +44,7 @@ flutter:
     - assets/tictactoe.jpeg
     - assets/findTheJoker.jpg
     - assets/matchTheCards.jpg
+    - assets/dotsAndPages.png
 
   # Fonts section can be added here if you have custom fonts
   # To add custom fonts to your application, add a fonts section here,
